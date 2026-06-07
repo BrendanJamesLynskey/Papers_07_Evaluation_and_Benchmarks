@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Papers 07 — Evaluation &amp; Benchmarks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-card: #0d1117;
+            --bg-code: #161b22;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent: #76B900;
+            --accent-dim: #76B90044;
+            --accent-glow: #76B90033;
+            --border: #21262d;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --font-body: 'Inter', sans-serif;
+            --max-width: 900px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 17px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .hero > * { position: relative; z-index: 1; }
+        .series-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+        .hero h1 .accent { color: var(--accent); }
+        .hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin-bottom: 2rem;
+        }
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+        }
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+            white-space: nowrap;
+        }
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            max-width: var(--max-width);
+        }
+        .pipeline-step {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .pipeline-arrow { color: var(--accent); font-size: 0.9rem; font-weight: 700; }
+        .slide {
+            min-height: 100vh;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .slide-number {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--accent-dim);
+            position: absolute;
+            top: 2rem;
+            right: 1.5rem;
+            line-height: 1;
+            user-select: none;
+        }
+        .slide h2 {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            line-height: 1.25;
+        }
+        .slide h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .slide p { margin-bottom: 1rem; color: var(--text-secondary); }
+        .slide p strong { color: var(--text-primary); }
+        .slide ul, .slide ol { margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text-secondary); }
+        .slide li { margin-bottom: 0.4rem; }
+        .slide li strong { color: var(--text-primary); }
+        .slide code {
+            font-family: var(--font-mono);
+            font-size: 0.88em;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            padding: 0.05rem 0.35rem;
+            border-radius: 3px;
+            color: #c9d1d9;
+        }
+        .code-block {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1.25rem 0;
+            overflow: hidden;
+        }
+        .code-header {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(118, 185, 0, 0.08);
+            padding: 0.4rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .code-block pre { margin: 0; padding: 1rem; overflow-x: auto; }
+        .code-block code {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #c9d1d9;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+        .kw { color: #ff7b72; }
+        .fn { color: #d2a8ff; }
+        .str { color: #a5d6ff; }
+        .cm { color: #8b949e; font-style: italic; }
+        .num { color: #79c0ff; }
+        .type { color: #ffa657; }
+        .dir { color: #ff7b72; }
+        .mac { color: #ffa657; }
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th {
+            background: var(--bg-code);
+            color: var(--accent);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-display);
+            white-space: nowrap;
+        }
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: rgba(13, 17, 23, 0.5); }
+        .diagram-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .diagram-box {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-align: center;
+            white-space: nowrap;
+        }
+        .diagram-box.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .diagram-box.dim { color: var(--text-secondary); border-color: var(--border); }
+        .diagram-arrow { color: var(--accent); font-size: 1.3rem; font-weight: 700; }
+        .diagram-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .diagram-vertical .diagram-arrow { font-size: 1.1rem; }
+        .hierarchy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .hierarchy-level { display: flex; align-items: center; gap: 0.75rem; }
+        .hierarchy-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 80px;
+            text-align: right;
+        }
+        .hierarchy-items { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+        .hierarchy-item {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .hierarchy-item.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .diagram-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .diagram-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .diagram-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .diagram-panel {
+            padding: 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .diagram-panel.accent-border { border-left: 3px solid var(--accent); }
+        .diagram-panel h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+        .diagram-panel p, .diagram-panel ul { font-size: 0.85rem; }
+        .callout {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+        .callout p { margin-bottom: 0; }
+        .callout p + p { margin-top: 0.5rem; }
+        .callout .callout-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.3rem;
+        }
+        .contents-list { list-style: none; padding-left: 0; counter-reset: contents; }
+        .contents-list li {
+            counter-increment: contents;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .contents-list li:last-child { border-bottom: none; }
+        .contents-list li::before {
+            content: counter(contents, decimal-leading-zero);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 2rem;
+        }
+        .contents-list a { color: var(--text-primary); text-decoration: none; transition: color 0.2s; }
+        .contents-list a:hover { color: var(--accent); }
+        .footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+        .footer a { color: var(--accent); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        .canvas-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.25rem 0;
+            overflow-x: auto;
+        }
+        .canvas-wrap canvas, .canvas-wrap svg { display: block; margin: 0 auto; max-width: 100%; }
+        .badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: middle;
+            margin-left: 0.3rem;
+        }
+        .badge.ok    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .badge.warn  { border-color: #ffa657; color: #ffa657; background: rgba(255,166,87,0.08); }
+        .badge.bad   { border-color: #ff7b72; color: #ff7b72; background: rgba(255,123,114,0.08); }
+        @media (max-width: 640px) {
+            .slide { padding: 3rem 1rem; min-height: auto; }
+            .slide-number { font-size: 3rem; top: 1.5rem; right: 1rem; }
+            .slide h2 { font-size: 1.5rem; }
+            .diagram-grid.cols-2, .diagram-grid.cols-3 { grid-template-columns: 1fr; }
+            .pipeline { gap: 0.15rem; }
+            .pipeline-step { font-size: 0.6rem; padding: 0.2rem 0.4rem; }
+            .hero h1 { font-size: 1.8rem; }
+            table { font-size: 0.78rem; }
+        }
+    </style>
+</head>
+<body>
+<header class="hero">
+    <div class="series-label">Key LLM Publications Series &mdash; Presentation 07</div>
+    <h1>Evaluation &amp; Benchmarks &mdash; <span class="accent">How Do We Know It Works?</span></h1>
+    <p class="subtitle">From multiple-choice knowledge tests to unit-tested code, hard capability probes, holistic multi-metric audits, and the rise of LLM-as-judge and crowdsourced Elo. The five publications that define how we measure language models.</p>
+    <div class="tags">
+        <span class="tag">MMLU</span>
+        <span class="tag">HumanEval</span>
+        <span class="tag">BIG-bench</span>
+        <span class="tag">HELM</span>
+        <span class="tag">LLM-as-Judge</span>
+        <span class="tag">Chatbot Arena</span>
+    </div>
+    <div class="pipeline">
+        <span class="pipeline-step">Knowledge Tests</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Code Eval</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Capability Probes</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Holistic Metrics</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Human Preference / LLM-as-Judge</span>
+    </div>
+</header>
+
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>The Five Publications</h2>
+    <ul class="contents-list">
+        <li><a href="#slide-01">MMLU &mdash; Measuring Massive Multitask Language Understanding</a></li>
+        <li><a href="#slide-02">HumanEval &mdash; Evaluating LLMs Trained on Code (pass@k)</a></li>
+        <li><a href="#slide-03">BIG-bench &mdash; Beyond the Imitation Game</a></li>
+        <li><a href="#slide-04">HELM &mdash; Holistic Evaluation of Language Models</a></li>
+        <li><a href="#slide-05">LLM-as-a-Judge &mdash; MT-Bench &amp; Chatbot Arena</a></li>
+        <li><a href="#slide-06">What to Take Away</a></li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>MMLU &mdash; Measuring Massive Multitask Language Understanding</h2>
+    <p>Hendrycks, Burns, Basart, Zou, Mazeika, Song &amp; Steinhardt &mdash; 2020 <span class="badge ok">NeurIPS 2021 / arXiv:2009.03300</span></p>
+
+    <h3>The problem</h3>
+    <p>By 2020, models were saturating narrow benchmarks (GLUE, SuperGLUE) that tested a handful of linguistic skills. There was no single test that asked: <strong>does the model actually know things across the breadth of human knowledge a well-read person is expected to have?</strong> Existing evals could not distinguish a model with shallow pattern-matching from one with genuine multidisciplinary understanding.</p>
+
+    <h3>The contribution</h3>
+    <p>MMLU is a <strong>four-way multiple-choice exam spanning 57 subjects</strong> &mdash; from elementary mathematics and US history to college-level law, professional medicine, abstract algebra, philosophy and machine learning. Questions are drawn from real exams and practice tests. Crucially, models are evaluated <strong>zero-shot and few-shot</strong> (typically 5-shot), never fine-tuned on the task, so the score reflects knowledge acquired during pre-training. Random chance is 25%; the authors reported GPT-3 at ~43.9% versus ~89% for unspecialised humans, exposing a large gap.</p>
+
+    <div class="hierarchy">
+        <div class="hierarchy-level">
+            <div class="hierarchy-label">STEM</div>
+            <div class="hierarchy-items">
+                <div class="hierarchy-item accent">Abstract algebra</div>
+                <div class="hierarchy-item accent">College physics</div>
+                <div class="hierarchy-item">Computer security</div>
+                <div class="hierarchy-item">Machine learning</div>
+            </div>
+        </div>
+        <div class="hierarchy-level">
+            <div class="hierarchy-label">Humanities</div>
+            <div class="hierarchy-items">
+                <div class="hierarchy-item accent">Philosophy</div>
+                <div class="hierarchy-item accent">World religions</div>
+                <div class="hierarchy-item">Professional law</div>
+            </div>
+        </div>
+        <div class="hierarchy-level">
+            <div class="hierarchy-label">Social sci</div>
+            <div class="hierarchy-items">
+                <div class="hierarchy-item">Econometrics</div>
+                <div class="hierarchy-item">US foreign policy</div>
+                <div class="hierarchy-item">Psychology</div>
+            </div>
+        </div>
+        <div class="hierarchy-level">
+            <div class="hierarchy-label">Other / Pro</div>
+            <div class="hierarchy-items">
+                <div class="hierarchy-item accent">Professional medicine</div>
+                <div class="hierarchy-item">Clinical knowledge</div>
+                <div class="hierarchy-item">Business ethics</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Why it matters to a practising engineer</h3>
+    <p>MMLU became <em>the</em> headline number quoted on every model card &mdash; if you compare base models, you are almost certainly comparing MMLU. But it is now <strong>partly saturated</strong>: frontier models score in the high 80s, compressing the signal and making small differences noisy. It is also sensitive to prompt format and answer-parsing, and has known label errors. <strong>MMLU-Pro</strong> (2024) responded with ten options, harder reasoning-heavy questions and reduced answer leakage. Treat MMLU as a coarse pre-training sanity check, not a fine-grained ranking tool.</p>
+
+    <div class="callout">
+        <div class="callout-label">Practitioner caution</div>
+        <p>The same model can move several points on MMLU purely from the harness &mdash; log-likelihood scoring of the four letters versus free-text generation, the exact few-shot template, and whitespace handling all matter. When you see two leaderboards disagree, suspect the harness before the model. Always note whether a quoted score is 0-shot or 5-shot.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>HumanEval &mdash; Evaluating Large Language Models Trained on Code</h2>
+    <p>Chen et al. (OpenAI) &mdash; 2021 <span class="badge ok">arXiv:2107.03374</span> &nbsp; <span class="badge">Codex</span></p>
+
+    <h3>The problem</h3>
+    <p>Code generation cannot be judged by surface text similarity to a reference solution &mdash; two correct programs can look nothing alike, and a near-identical program can be subtly broken. BLEU-style match metrics are actively misleading for code. The field needed a metric grounded in <strong>functional correctness</strong>: does the generated program actually run and produce the right answers?</p>
+
+    <h3>The contribution</h3>
+    <p>The paper introduced <strong>HumanEval</strong>: 164 hand-written Python problems, each a function signature plus docstring, accompanied by an average of ~7.7 hidden unit tests. A sample is correct only if it <strong>passes every test</strong>. To score stochastic sampling fairly, the paper popularised the <strong>pass@k</strong> metric: the probability that at least one of <em>k</em> sampled completions is correct. Naively estimating this by drawing exactly k samples is high-variance, so they generate <code>n &gt; k</code> samples, count the <code>c</code> that pass, and use an unbiased estimator.</p>
+
+    <div class="code-block">
+        <div class="code-header">Unbiased pass@k estimator (Chen et al., 2021)</div>
+<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">pass_at_k</span>(n: <span class="type">int</span>, c: <span class="type">int</span>, k: <span class="type">int</span>) -> <span class="type">float</span>:
+    <span class="cm"># n = total samples generated, c = number correct, k = the k in pass@k</span>
+    <span class="cm"># 1 - C(n-c, k) / C(n, k)  =  P(at least one of k drawn samples passes)</span>
+    <span class="kw">if</span> n - c &lt; k:
+        <span class="kw">return</span> <span class="num">1.0</span>
+    <span class="kw">return</span> <span class="num">1.0</span> - np.prod(<span class="num">1.0</span> - k / np.arange(n - c + <span class="num">1</span>, n + <span class="num">1</span>))</code></pre>
+    </div>
+
+    <p>The product form avoids overflow from large binomial coefficients and is numerically stable. Codex (a GPT model fine-tuned on public code) reached <strong>28.8% pass@1</strong> and <strong>~70% pass@100</strong> on HumanEval &mdash; the gap between the two showing that the model often <em>can</em> solve a problem if allowed many attempts, which motivated later work on sampling and verification.</p>
+
+    <div class="callout">
+        <div class="callout-label">Why pass@1 vs pass@100 both matter</div>
+        <p>pass@1 reflects single-shot reliability &mdash; what a user feels in an IDE autocomplete. pass@100 reflects the ceiling reachable with reranking, test-time search or self-repair. A wide gap is an opportunity: it says correct solutions exist in the model's output distribution and the bottleneck is selection, not capability. This insight underpins best-of-n sampling, execution-guided reranking and agentic self-debugging.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>BIG-bench &mdash; Beyond the Imitation Game</h2>
+    <p>Srivastava et al. (450+ authors, 130+ institutions) &mdash; 2022 <span class="badge ok">arXiv:2206.04615</span></p>
+
+    <h3>The problem</h3>
+    <p>Benchmarks were being saturated faster than they could be built, and each tested a narrow slice of capability. Worse, hand-curated tasks reflected the blind spots of a small group of researchers. The community needed a benchmark that was <strong>broad, diverse, and deliberately hard</strong> &mdash; designed to probe what current models <em>cannot</em> yet do, and to keep being informative as models scale.</p>
+
+    <h3>The contribution</h3>
+    <p>BIG-bench (Beyond the Imitation Game Benchmark) is a <strong>collaborative suite of 200+ tasks</strong> contributed by the community, spanning logic, mathematics, common-sense reasoning, linguistics, social bias, code, and many tasks invented specifically to be difficult for language models. It studies how performance scales with model size, and identifies <strong>emergent</strong> tasks where capability appears suddenly past a scale threshold and <strong>flat</strong> tasks where scale barely helps.</p>
+
+    <div class="diagram-flow">
+        <div class="diagram-box dim">200+ community tasks</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">Select hardest /<br>most informative</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">BIG-Bench Hard<br><small>23 tasks (BBH)</small></div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box">+ Chain-of-Thought</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">Large gains</div>
+    </div>
+
+    <p>Its most enduring legacy is the <strong>BIG-Bench Hard (BBH)</strong> subset: 23 tasks on which models at the time of release scored below the average human rater. BBH became a standard reasoning benchmark precisely because it is where <strong>chain-of-thought prompting helps most</strong> &mdash; CoT flips several BBH tasks from below-random to strongly above-human, a result that helped cement step-by-step prompting as a default technique.</p>
+
+    <div class="callout">
+        <div class="callout-label">Contamination is the silent killer</div>
+        <p>Because BIG-bench is public and famous, much of it has leaked into pre-training corpora. A high BBH score on a model trained after 2022 may reflect memorisation, not reasoning. Mitigations include the canary string the authors embedded to let trainers exclude the data, held-out private variants, and date-stamped fresh tasks. When you report BBH, state the model's training cutoff and whether the canary was honoured.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>HELM &mdash; Holistic Evaluation of Language Models</h2>
+    <p>Liang et al. (Stanford CRFM) &mdash; 2022 <span class="badge ok">arXiv:2211.09110</span></p>
+
+    <h3>The problem</h3>
+    <p>Most evaluation reported a single accuracy number on a single task for a single model. That hides everything a deployer actually cares about: is the model <strong>calibrated</strong>? <strong>Robust</strong> to typos and paraphrase? <strong>Fair</strong> across demographics? Does it emit <strong>toxic</strong> or <strong>biased</strong> text? How <strong>efficient</strong> is it? And no two papers evaluated the same models on the same conditions, so cross-model comparison was apples-to-oranges.</p>
+
+    <h3>The contribution</h3>
+    <p>HELM reframes evaluation as a <strong>scenarios &times; metrics matrix</strong>, evaluated densely and transparently. It defines a taxonomy of <em>scenarios</em> (task + domain + who-it-is-for) and measures <strong>seven metric categories on every scenario simultaneously</strong>, rather than reporting accuracy alone. It then ran the <em>same</em> standardised conditions across dozens of models, publishing every raw prediction for reproducibility &mdash; making it the first large-scale, like-for-like, multi-metric audit of the model landscape.</p>
+
+    <div class="diagram-grid cols-3">
+        <div class="diagram-panel accent-border">
+            <h4>Accuracy</h4>
+            <p>Task performance &mdash; exact match, F1, NDCG, etc., per scenario.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Calibration</h4>
+            <p>Do predicted probabilities match observed correctness? ECE.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Robustness</h4>
+            <p>Stability under typos, capitalisation, paraphrase perturbations.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Fairness</h4>
+            <p>Performance parity across dialect and demographic group.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Bias &amp; Toxicity</h4>
+            <p>Stereotype associations and rate of harmful generations.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Efficiency</h4>
+            <p>Inference time, energy and cost &mdash; treated as first-class.</p>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Scenario \ Metric</th><th>Accuracy</th><th>Calibration</th><th>Robustness</th><th>Toxicity</th><th>Efficiency</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Open QA</strong> (NaturalQuestions)</td><td>&#x2713;</td><td>&#x2713;</td><td>&#x2713;</td><td>&#x2713;</td><td>&#x2713;</td></tr>
+                <tr><td><strong>Summarisation</strong> (CNN/DM)</td><td>&#x2713;</td><td>&#x2713;</td><td>&#x2713;</td><td>&#x2713;</td><td>&#x2713;</td></tr>
+                <tr><td><strong>Sentiment</strong> (IMDB)</td><td>&#x2713;</td><td>&#x2713;</td><td>&#x2713;</td><td>&mdash;</td><td>&#x2713;</td></tr>
+                <tr><td><strong>Toxicity probe</strong> (RealToxicityPrompts)</td><td>&mdash;</td><td>&mdash;</td><td>&#x2713;</td><td>&#x2713;</td><td>&#x2713;</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Why it matters to a practising engineer</h3>
+    <p>HELM is the template for a <strong>real model selection process</strong>. A model that wins on accuracy may lose badly on calibration or cost &mdash; both decisive in production. The living leaderboard (and its later spin-offs HELM Lite, HEIM for images, and HELM Instruct) gives a reproducible, multi-axis comparison you can cite. The deeper lesson: <strong>pick the metrics that map to your deployment risks</strong> and measure all of them at once, not just the headline.</p>
+
+    <div class="callout">
+        <div class="callout-label">Transparency as a deliverable</div>
+        <p>HELM's most quietly radical choice was publishing every prompt and every raw completion. That lets you audit <em>why</em> a model scored as it did, re-grade with your own metric, and detect harness bugs. When you build an internal eval, copy this: store raw inputs and outputs, not just the aggregate score, so the evaluation itself is reproducible and debuggable months later.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>LLM-as-a-Judge &mdash; MT-Bench &amp; Chatbot Arena</h2>
+    <p>Zheng et al. (LMSYS) &mdash; 2023 <span class="badge ok">NeurIPS 2023 / arXiv:2306.05685</span></p>
+
+    <h3>The problem</h3>
+    <p>For open-ended chat, multiple-choice accuracy is meaningless &mdash; quality is about helpfulness, style, instruction-following and coherence over multiple turns. Human preference labelling is the gold standard but is slow and expensive, and it does not scale to the rapid cadence of model releases. Can a strong LLM stand in as an automatic judge, and if so, how trustworthy is it?</p>
+
+    <h3>The contribution</h3>
+    <p>The paper makes the case for <strong>LLM-as-a-judge</strong> &mdash; using a strong model (GPT-4) to grade answers &mdash; and shows it reaches <strong>~80%+ agreement with human preferences</strong>, comparable to human&ndash;human agreement. Critically, it does not just advocate the method, it <strong>documents the judge's systematic biases</strong> and proposes mitigations. It introduces two complementary tools: <strong>MT-Bench</strong>, 80 curated multi-turn questions across eight categories scored by the judge, and <strong>Chatbot Arena</strong>, a crowdsourced platform where anonymous users chat with two models side-by-side, vote a winner, and the pairwise outcomes are aggregated into an <strong>Elo</strong> leaderboard.</p>
+
+    <div class="diagram-flow">
+        <div class="diagram-box">User prompt</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">Model A vs Model B<br><small>anonymous, side-by-side</small></div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">Human votes winner</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box">Pairwise battle record</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">Elo / Bradley-Terry<br><small>ranking</small></div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Judge bias</th><th>What happens</th><th>Mitigation</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Position bias</strong> <span class="badge bad">bias</span></td><td>Judge favours whichever answer is shown first (or second)</td><td>Swap order and average both orderings; require a tie when inconsistent</td></tr>
+                <tr><td><strong>Verbosity bias</strong> <span class="badge bad">bias</span></td><td>Longer, more elaborate answers rated higher regardless of correctness</td><td>Control for length; penalise padding; check on length-matched pairs</td></tr>
+                <tr><td><strong>Self-enhancement</strong> <span class="badge bad">bias</span></td><td>Judge prefers answers from its own model family</td><td>Use a different judge family; ensemble judges; calibrate vs humans</td></tr>
+                <tr><td><strong>Limited reasoning</strong> <span class="badge warn">warn</span></td><td>Judge mis-grades hard math/logic it cannot itself solve</td><td>Provide reference solutions; chain-of-thought grading</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Why it matters to a practising engineer</h3>
+    <p>LLM-as-a-judge is now the workhorse of internal evals, RLHF/RLAIF reward modelling, and CI gates for prompt and model changes &mdash; it is fast, cheap and scalable. But it is only trustworthy if you <strong>actively neutralise its biases</strong>: randomise position, control length, avoid same-family judging, and validate against a small human-labelled set. Chatbot Arena, meanwhile, remains the most-watched real-world preference signal &mdash; though its scores are confounded by traffic mix, style preferences and prompt distribution.</p>
+
+    <div class="callout">
+        <div class="callout-label">Build your own pairwise eval the right way</div>
+        <p>The default recipe: present (A, B) and (B, A), take the verdict only if consistent across both orders, otherwise score a tie. Aggregate many pairwise verdicts with Bradley-Terry / Elo rather than raw win-rate so you get a transparent, comparable rating with confidence intervals. Pin the judge model and prompt version &mdash; changing either silently shifts your entire leaderboard.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>What to Take Away</h2>
+    <ul>
+        <li><strong>No single number is enough.</strong> The five papers form a ladder &mdash; knowledge (MMLU), functional correctness (HumanEval), hard capability (BIG-bench/BBH), holistic multi-metric audit (HELM), and open-ended human preference (Arena/judge). A serious evaluation samples across the whole ladder.</li>
+        <li><strong>Match the metric to the modality.</strong> Multiple-choice for knowledge, unit tests for code, pairwise preference for chat. Using BLEU on code or accuracy on open-ended chat is a category error.</li>
+        <li><strong>pass@k separates capability from selection.</strong> A large pass@1-to-pass@100 gap means correct answers already exist in the distribution &mdash; invest in reranking, search and self-repair, not just a bigger model.</li>
+        <li><strong>Saturation and contamination erode benchmarks.</strong> MMLU is partly saturated (hence MMLU-Pro); BIG-bench has leaked into training data. Always note training cutoff, shot count and harness when quoting a score.</li>
+        <li><strong>Measure what you will ship on.</strong> HELM's lesson: evaluate accuracy, calibration, robustness, fairness, toxicity and cost together, and store raw outputs so the eval is reproducible.</li>
+        <li><strong>LLM-as-judge is powerful but biased.</strong> Neutralise position and verbosity bias, avoid self-enhancement, and anchor to a small human-labelled set before you trust it as a CI gate.</li>
+    </ul>
+
+    <div class="callout">
+        <div class="callout-label">Next in the series</div>
+        <p><strong>Presentation 08 &mdash; Multimodal Models.</strong> We move beyond text to vision-language and beyond: CLIP-style contrastive pre-training, the architectures that fuse pixels and tokens, and how the evaluation philosophy from this deck (functional, holistic, preference-based) extends to images, audio and video.</p>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>Part of the <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Key_Publications">Key LLM Publications Series</a></p>
+    <p style="margin-top:0.5rem;font-size:0.8rem;"><a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Key_Publications">Back to Series Index</a></p>
+</footer>
+<script>
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.slide').forEach(slide => {
+        slide.style.opacity = '0';
+        slide.style.transform = 'translateY(30px)';
+        slide.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(slide);
+    });
+</script>
+</body>
+</html>
